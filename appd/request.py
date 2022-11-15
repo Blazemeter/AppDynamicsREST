@@ -69,8 +69,8 @@ class AppDynamicsClient(object):
     EXCEPTIONS_PER_MINUTE = 'Exceptions per Minute'
     STALLS = 'Stall Count'
 
-    def __init__(self, base_url='http://localhost:8090', username='user1', password='welcome',
-                 account='customer1', debug=False, verify=True):
+    def __init__(self, base_url='http://localhost:8090', username=None, password=None,
+                 account='customer1', temp_token=None, debug=False, verify=True):
         """
         Creates a new instance of the client.
 
@@ -82,14 +82,17 @@ class AppDynamicsClient(object):
         :type password: str.
         :param account: Account name for multi-tenant controllers. For single-tenant controllers, use
                         the default value of "customer1".
+        :param temp_token: Authentication Token as a replacement for the username and password
+        :type temp_token: str.
         :param debug: Set to :const:`True` to print extra debugging information to :const:`sys.stdout`.
         :type debug: bool.
         """
 
-        self._username, self._password, self._account, self._app_id, self._session = '', '', '', None, None
-        self._base_url = ''
-        (self.base_url, self.username, self.password, self.account, self.debug, self.verify) = (base_url, username, password,
-                                                                                   account, debug, verify)
+        self._username, self._password, self._auth_token, self._account, self._app_id, self._session, self._base_url = \
+            '', '', None,  '', None, None, ''
+
+        (self.base_url, self.username, self.password, self.account, self.auth_token, self.debug, self.verify) = \
+            (base_url, username, password, account, temp_token, debug, verify)
 
     @property
     def base_url(self):
@@ -123,6 +126,14 @@ class AppDynamicsClient(object):
     def password(self, new_password):
         self._password = new_password
         self.__make_auth()
+
+    @property
+    def auth_token(self):
+        return self._auth_token
+
+    @auth_token.setter
+    def auth_token(self, new_auth_token):
+        self._auth_token = new_auth_token
 
     @property
     def account(self):
@@ -201,14 +212,24 @@ class AppDynamicsClient(object):
                 del params[k]
 
         if self.debug:
-            print('Retrieving ' + url, self._auth, params)
+            print('Retrieving ' + url, self._auth, params, self._auth_token)
+
+        _auth = self._auth
+        _headers = None
+        if self._auth_token is not None and not headers:
+            _auth = None
+            _headers = {'Authorization': 'Bearer ' + self._auth_token}
 
         if method == 'GET' or query:
-            r = self._get_session().request(method, url, auth=self._auth, params=params, headers=headers)
+            if not headers:
+                headers = _headers
+            r = self._get_session().request(method, url, auth=_auth, params=params, headers=headers)
         else:
             if not headers:
                 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-            r = self._get_session().request(method, url, auth=self._auth, data=json.dumps(params), headers=headers)
+                if isinstance(_headers, dict):
+                    headers.update(_headers)
+            r = self._get_session().request(method, url, auth=_auth, data=json.dumps(params), headers=headers)
 
         if r.status_code != requests.codes.ok:
             print(url, file=sys.stderr)
