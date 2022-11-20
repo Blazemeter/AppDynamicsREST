@@ -70,7 +70,7 @@ class AppDynamicsClient(object):
     STALLS = 'Stall Count'
 
     def __init__(self, base_url='http://localhost:8090', username=None, password=None,
-                 account='customer1', temp_token=None, debug=False, verify=True):
+                 account='customer1', access_token=None, debug=False, verify=True):
         """
         Creates a new instance of the client.
 
@@ -82,8 +82,8 @@ class AppDynamicsClient(object):
         :type password: str.
         :param account: Account name for multi-tenant controllers. For single-tenant controllers, use
                         the default value of "customer1".
-        :param temp_token: Authentication Token as a replacement for the username and password
-        :type temp_token: str.
+        :param access_token: Authentication Token as an alternative for username/password authentication.
+        :type access_token: str.
         :param debug: Set to :const:`True` to print extra debugging information to :const:`sys.stdout`.
         :type debug: bool.
         """
@@ -92,7 +92,7 @@ class AppDynamicsClient(object):
             '', '', None,  '', None, None, ''
 
         (self.base_url, self.username, self.password, self.account, self.auth_token, self.debug, self.verify) = \
-            (base_url, username, password, account, temp_token, debug, verify)
+            (base_url, username, password, account, access_token, debug, verify)
 
     @property
     def base_url(self):
